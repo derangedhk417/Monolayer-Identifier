@@ -204,4 +204,8 @@ if __name__ == '__main__':
 		ax.set_title("3D Cluster Visualization")
 		plt.show()
 
+		# Write the model to a file.
+		with open(args.output_file, 'wb') as file:
+			file.write(pickle.dumps(bgmm))
+
 
