@@ -1,2 +1,2 @@
 # Monolayer-Identifier
-Code related to automatic recognition of TMD monolayers in microscope images.
+Code related to automatic recognition of monolayers in microscope images.
