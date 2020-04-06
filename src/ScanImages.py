@@ -12,7 +12,7 @@ import cv2
 import pickle
 import numpy             as np
 import matplotlib.pyplot as plt
-
+from sklearn.mixture       import BayesianGaussianMixture
 from readable_csv          import readable_csv as csv
 
 # Processes the arguments, sets up directories and validates that files
@@ -48,19 +48,19 @@ def draw_contours(image, contours, edges):
 		cpy = cv2.drawContours(cpy, contours, i, (255, 0, 0), 1)
 
 	plt.subplot(131)
-	plt.imshow(image, cmap='gray')
+	plt.imshow(image)
 	plt.title('Original Image')
 	plt.xticks([])
 	plt.yticks([])
 
 	plt.subplot(132)
-	plt.imshow(edges, cmap='gray')
+	plt.imshow(edges)
 	plt.title('Edge Detection')
 	plt.xticks([])
 	plt.yticks([])
 
 	plt.subplot(133)
-	plt.imshow(cpy, cmap='gray')
+	plt.imshow(cpy)
 	plt.title('Contours')
 	plt.xticks([])
 	plt.yticks([])
@@ -83,15 +83,60 @@ def getLargerThan(contours, s):
 def extract_data_from_file(fname):
 	img   = cv2.imread(fname, cv2.IMREAD_COLOR)
 
+	#code.interact(local=locals())
+
 	# Try to reduce the image size to around 300 x 300
 	scale = np.sqrt((300**2) / (img.shape[0] * img.shape[1]))
 
 	img   = cv2.resize(img, (0, 0), fx = scale, fy = scale)
+	plt.subplot(231)
+	plt.imshow(img)
+	plt.title("Original Image (Downscaled)")
+	plt.xticks([])
+	plt.yticks([])
+
 	img   = cv2.GaussianBlur(img, (5, 5), 2)
-	grad  = cv2.Sobel(img, -1, 1, 1, ksize=3)
+	plt.subplot(232)
+	plt.imshow(img)
+	plt.title("Original Image (Gaussian Blurred)")
+	plt.xticks([])
+	plt.yticks([])
+
+	
+
+	# Reshape the image into something that can be processed by the clustering
+	# algorithm.
+
+	data = img.reshape(img.shape[0] * img.shape[1], img.shape[2])
+
+	bgmm = BayesianGaussianMixture(
+		n_components=3,
+		covariance_type='full'
+	)
+
+	bgmm.fit(data)
+	classes = bgmm.predict(data)
+	# Convert the three classes into regions that are red, green or blue.
+	new_colors = img.copy()
+	new_colors[:, :, 0] = 255 * (classes == 0).reshape(img.shape[0], img.shape[1])
+	new_colors[:, :, 1] = 255 * (classes == 1).reshape(img.shape[0], img.shape[1])
+	new_colors[:, :, 2] = 255 * (classes == 2).reshape(img.shape[0], img.shape[1])
 
 
-	lower = grad.max() * 0.35
+	#code.interact(local=locals())
+
+	grad  = cv2.Sobel(img, -1, 1, 1, ksize=1)
+
+	plot_grad = grad.copy()
+	plot_grad = (plot_grad - plot_grad.min()) / (plot_grad.max() - plot_grad.min())
+	plt.subplot(233)
+	plt.imshow(plot_grad)
+	plt.title("Sobel Filter")
+	plt.xticks([])
+	plt.yticks([])
+
+
+	lower = grad.max() * 0.45
 	upper = grad.max() * 0.75
 
 	print(lower)
@@ -100,14 +145,44 @@ def extract_data_from_file(fname):
 
 	edges = cv2.Canny(img, lower, upper)
 
+	plt.subplot(234)
+	plt.imshow(edges)
+	plt.title("Edge Detected Image")
+	plt.xticks([])
+	plt.yticks([])
+
+	# contours, heirarchy = cv2.findContours(
+	# 	edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
+	# )
+	
+
 	contours, heirarchy = cv2.findContours(
-		edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
+		edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
 	)
 
-	contours = getLargerThan(contours, 15.0)
+	#contours = getLargerThan(contours, 80.0)
 
 	
-	draw_contours(img, contours, edges)
+	# draw_contours(img, contours, edges)
+
+	cpy = img.copy()
+	for i in range(len(contours)):
+		cpy = cv2.drawContours(cpy, contours, i, (255, 0, 0), 1)
+
+	plt.subplot(235)
+	plt.imshow(cpy)
+	plt.title('Contours')
+	plt.xticks([])
+	plt.yticks([])
+
+	plt.subplot(236)
+	plt.imshow(new_colors)
+	plt.title('Clustered')
+	plt.xticks([])
+	plt.yticks([])
+
+	plt.tight_layout(rect=[0, 0, 0, 0])
+	plt.show()
 
 
 if __name__ == '__main__':
@@ -140,3 +215,22 @@ if __name__ == '__main__':
 
 	for file in files:
 		extract_data_from_file(os.path.join(args.directory, file))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
