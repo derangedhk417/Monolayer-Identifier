@@ -14,6 +14,7 @@ import numpy             as np
 import matplotlib.pyplot as plt
 from sklearn.mixture       import BayesianGaussianMixture
 from readable_csv          import readable_csv as csv
+from colors import dist_colors as colors
 
 def torgb(h):
 	return [int(h[1:3], 16), int(h[3:5], 16), int(h[5:7], 16)]
@@ -80,6 +81,181 @@ def getLargerThan(contours, s):
 			selected.append(c)
 
 	return selected
+
+def plotimg(img, position, name):
+	plt.subplot(position)
+	plt.imshow(img)
+	plt.title(name)
+	plt.xticks([])
+	plt.yticks([])
+
+def subimage(image, rect):
+	border_size = int(image.shape[0] / 2)
+	image = cv2.copyMakeBorder(
+		image,
+		border_size,
+		border_size,
+		border_size,
+		border_size,
+		cv2.BORDER_CONSTANT,
+		value=[0, 0, 0]
+	)
+
+	((x, y), (w, h), theta) = rect
+
+	x = x + border_size
+	y = y + border_size
+
+	size = (image.shape[1], image.shape[0])
+
+	rotation_matrix = cv2.getRotationMatrix2D(center=(x, y), angle=theta, scale=1)
+	new_image       = cv2.warpAffine(image, rotation_matrix, dsize=size)
+
+	x = int(x - w/2)
+	y = int(y - h/2)
+
+	w = int(w)
+	h = int(h)
+
+	result = new_image[y:y+h, x:x+w, :]
+	#code.interact(local=locals())
+	return result
+
+
+def extract_flakes(fname):
+	n_classes = 3
+
+	img = cv2.imread(fname, cv2.IMREAD_COLOR)
+	# img = cv2.imread(fname, cv2.IMREAD_GRAYSCALE)
+
+	# Make a downscaled image to run the BGMM training on.
+	bgmm_scale = np.sqrt((100**2) / (img.shape[0] * img.shape[1]))
+	img_mini   = cv2.resize(img, (0, 0), fx=bgmm_scale, fy=bgmm_scale)
+
+
+	# Make a downscaled image to do the segmentation on. This one won't 
+	# be as small.
+	scale     = np.sqrt((300**2) / (img.shape[0] * img.shape[1]))
+	img_small = cv2.resize(img, (0, 0), fx=scale, fy=scale)
+
+	# Denoise the scaled down image before training the BGMM.
+	img_mini = cv2.fastNlMeansDenoisingColored(img_mini, 30, 30)
+
+	# Train a BGMM on the really small image.
+	samples = img_mini.reshape(
+		img_mini.shape[0] * img_mini.shape[1], 
+		img_mini.shape[2]
+	)
+
+	bgmm = BayesianGaussianMixture(
+		n_components=n_classes,
+		covariance_type='full'
+	)
+
+	bgmm.fit(samples)
+
+	# Denoise the image before segmenting.
+	denoised = cv2.fastNlMeansDenoisingColored(img_small, 30, 30)
+
+	# Categorize the pixels from the larger image.
+	data    = denoised.reshape(
+		denoised.shape[0] * denoised.shape[1], 
+		denoised.shape[2]
+	)
+	classes = bgmm.predict(data)
+
+	colored_img = denoised.copy()
+
+	for c in range(n_classes):
+		mask = (classes == c).reshape(denoised.shape[0], denoised.shape[1])
+		colored_img[mask] = torgb(colors[c])
+
+	# Dilate and then erode the colored image.
+	kernel      = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (6, 6))
+	dilated     = cv2.dilate(colored_img, kernel)
+	kernel2     = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (8, 8))
+	colored_img = cv2.erode(dilated, kernel2)
+
+	plotimg(img_small,   231, "Image")
+	plotimg(denoised,    232, "Denoised")
+	plotimg(colored_img, 233, "Segmented")
+
+	# Now we run edge detectiong and contouring on the segmented image.
+	edges = cv2.Canny(colored_img, 10, 80)
+
+	# Dilate the edges to close close contours
+	kernel  = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+	dilated = cv2.dilate(edges, kernel)
+
+	contours, heirarchy = cv2.findContours(
+		dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+	)
+
+	contours = getLargerThan(contours, (img_small.shape[0] / 20)**2)
+
+
+	# Draw the contours onto the original image.
+	contoured = img_small.copy()
+	for i in range(len(contours)):
+		contoured = cv2.drawContours(contoured, contours, i, (255, 0, 0), 1)
+
+	# plotimg(edges,     234, "Edges")
+	plotimg(dilated,   234, "Dilated Edges")
+	plotimg(contoured, 235, "Contours")
+
+	boxed = img_small.copy()
+	# Draw rotated bounding rectangles around the flakes.
+	for i in range(len(contours)):
+		rect = cv2.minAreaRect(contours[i])
+		box  = cv2.boxPoints(rect)
+		box  = np.int0(box)
+		boxed = cv2.drawContours(boxed, [box], 0, (255, 0, 0), 2)
+
+	plotimg(boxed, 236, "Bounding Boxes")
+		
+
+	print("Contour Areas:")
+	for c in contours:
+		print('    %s'%str(cv2.contourArea(c)))
+
+	plt.tight_layout()
+	plt.show()
+
+	# Show the largest contour.
+	largest = None
+	size    = 0
+	for contour in contours:
+		s = cv2.contourArea(contour)
+		if s > size:
+			largest = contour
+			size    = s
+
+	# Plot the flakes individually.
+	rect0 = cv2.minAreaRect(largest)
+
+	img0 = subimage(img_small, rect0)
+
+	plotimg(img0, 121, "Largest")
+
+	masked = img_small.copy()
+	# Fill every pixel that isn't inside the contour in as black.
+	mask = np.zeros((masked.shape[0], masked.shape[1]))
+	mask = cv2.fillPoly(mask, [largest], 1)
+
+	kernel  = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (12, 12))
+	mask    = cv2.erode(mask, kernel)
+
+	selection = mask == 0
+	masked[selection] = [0, 0, 0]
+	#code.interact(local=locals())
+
+	img1 = subimage(masked, rect0)
+
+	plotimg(img1, 122, "Masked")
+
+
+	plt.tight_layout()
+	plt.show()
 
 # TODO: Make the Canny edge detect parameters adjustable.
 # TODO: Make the contour method adjustable.
@@ -217,7 +393,7 @@ if __name__ == '__main__':
 	files = sorted(tmp)
 
 	for file in files:
-		extract_data_from_file(os.path.join(args.directory, file))
+		extract_flakes(os.path.join(args.directory, file))
 
 
 
