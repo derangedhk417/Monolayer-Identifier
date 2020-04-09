@@ -123,8 +123,8 @@ def subimage(image, rect):
 
 
 def extract_flakes(fname):
-	n_classes          = 2
-	denoise_strength   = 15
+	n_classes          = 3
+	denoise_strength   = 30
 	edge_dilate_size   = 3
 	mask_erode_size    = 12
 	contour_thickness  = 3
@@ -132,6 +132,8 @@ def extract_flakes(fname):
 	border_width       = 5
 
 	img = cv2.imread(fname, cv2.IMREAD_COLOR)
+	#img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+	img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 	# img = cv2.imread(fname, cv2.IMREAD_GRAYSCALE)
 
 	# Make a downscaled image to run the BGMM training on.
