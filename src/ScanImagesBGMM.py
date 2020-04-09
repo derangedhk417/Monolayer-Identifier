@@ -123,7 +123,13 @@ def subimage(image, rect):
 
 
 def extract_flakes(fname):
-	n_classes = 3
+	n_classes          = 2
+	denoise_strength   = 15
+	edge_dilate_size   = 3
+	mask_erode_size    = 12
+	contour_thickness  = 3
+	filter_edge_length = 0.02
+	border_width       = 5
 
 	img = cv2.imread(fname, cv2.IMREAD_COLOR)
 	# img = cv2.imread(fname, cv2.IMREAD_GRAYSCALE)
@@ -135,11 +141,15 @@ def extract_flakes(fname):
 
 	# Make a downscaled image to do the segmentation on. This one won't 
 	# be as small.
-	scale     = np.sqrt((300**2) / (img.shape[0] * img.shape[1]))
+	scale     = np.sqrt((1000**2) / (img.shape[0] * img.shape[1]))
 	img_small = cv2.resize(img, (0, 0), fx=scale, fy=scale)
 
 	# Denoise the scaled down image before training the BGMM.
-	img_mini = cv2.fastNlMeansDenoisingColored(img_mini, 30, 30)
+	img_mini = cv2.fastNlMeansDenoisingColored(
+		img_mini, 
+		denoise_strength, 
+		denoise_strength
+	)
 
 	# Train a BGMM on the really small image.
 	samples = img_mini.reshape(
@@ -155,7 +165,11 @@ def extract_flakes(fname):
 	bgmm.fit(samples)
 
 	# Denoise the image before segmenting.
-	denoised = cv2.fastNlMeansDenoisingColored(img_small, 30, 30)
+	denoised = cv2.fastNlMeansDenoisingColored(
+		img_small, 
+		denoise_strength, 
+		denoise_strength
+	)
 
 	# Categorize the pixels from the larger image.
 	data    = denoised.reshape(
@@ -164,6 +178,11 @@ def extract_flakes(fname):
 	)
 	classes = bgmm.predict(data)
 
+	(values, counts) = np.unique(classes, return_counts=True)
+	index            = np.argmax(counts)
+	most_common      = values[index]
+	bg_color         = torgb(colors[most_common])
+
 	colored_img = denoised.copy()
 
 	for c in range(n_classes):
@@ -171,33 +190,70 @@ def extract_flakes(fname):
 		colored_img[mask] = torgb(colors[c])
 
 	# Dilate and then erode the colored image.
-	kernel      = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (6, 6))
-	dilated     = cv2.dilate(colored_img, kernel)
-	kernel2     = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (8, 8))
-	colored_img = cv2.erode(dilated, kernel2)
+	#kernel      = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (6, 6))
+	#dilated     = cv2.dilate(colored_img, kernel)
+	#kernel2     = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (8, 8))
+	#colored_img = cv2.erode(dilated, kernel2)
+
+	# Make a black border of one pixel around the image
+	# so that the contouring algorithm won't mess up flakes
+	# that are cut off. The color needs to be the same as
+	# the background class. 
+	colored_img = cv2.copyMakeBorder(
+		colored_img, 
+		border_width, 
+		border_width, 
+		border_width, 
+		border_width, 
+		cv2.BORDER_CONSTANT,
+		value=bg_color
+	)
+
+	img_small = cv2.copyMakeBorder(
+		img_small, 
+		border_width, 
+		border_width, 
+		border_width, 
+		border_width, 
+		cv2.BORDER_CONSTANT,
+		value=[0, 0, 0]
+	)
 
 	plotimg(img_small,   231, "Image")
 	plotimg(denoised,    232, "Denoised")
 	plotimg(colored_img, 233, "Segmented")
 
+	
+
 	# Now we run edge detectiong and contouring on the segmented image.
 	edges = cv2.Canny(colored_img, 10, 80)
 
 	# Dilate the edges to close close contours
-	kernel  = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+	kernel  = cv2.getStructuringElement(
+		cv2.MORPH_ELLIPSE, 
+		(edge_dilate_size, edge_dilate_size)
+	)
 	dilated = cv2.dilate(edges, kernel)
 
 	contours, heirarchy = cv2.findContours(
 		dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
 	)
 
-	contours = getLargerThan(contours, (img_small.shape[0] / 20)**2)
+	contours = getLargerThan(
+		contours, 
+		(img_small.shape[0] * filter_edge_length)**2
+	)
 
 
 	# Draw the contours onto the original image.
 	contoured = img_small.copy()
 	for i in range(len(contours)):
-		contoured = cv2.drawContours(contoured, contours, i, (255, 0, 0), 1)
+		contoured = cv2.drawContours(
+			contoured, 
+			contours, 
+			i, (0, 255, 0), 
+			contour_thickness
+		)
 
 	# plotimg(edges,     234, "Edges")
 	plotimg(dilated,   234, "Dilated Edges")
@@ -242,7 +298,10 @@ def extract_flakes(fname):
 	mask = np.zeros((masked.shape[0], masked.shape[1]))
 	mask = cv2.fillPoly(mask, [largest], 1)
 
-	kernel  = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (12, 12))
+	kernel  = cv2.getStructuringElement(
+		cv2.MORPH_ELLIPSE, 
+		(mask_erode_size, mask_erode_size)
+	)
 	mask    = cv2.erode(mask, kernel)
 
 	selection = mask == 0
