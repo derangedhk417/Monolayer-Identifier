@@ -49,7 +49,8 @@ if __name__ == '__main__':
 	tmp = []
 	for f in files:
 		if os.path.isfile(os.path.join(args.directory, f)):
-			tmp.append(f)
+			if '.DS_Store' not in f:
+				tmp.append(f)
 
 	files = sorted(tmp)
 	files = [os.path.join(args.directory, file) for file in files]

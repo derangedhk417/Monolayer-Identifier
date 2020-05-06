@@ -118,9 +118,28 @@ Introduction
 \end_layout
 
 \begin_layout Standard
-Many of the most popular methods of building van der Waals (vdW) heterostructure
-s involve a probabilistic process by which thousands of microscopic flakes
- of varying sizes and shapes are deposited onto a microscope slide
+Van der Waals (vdW) heterostructures are comprised of two or more layers
+ of atomically thin two dimensional crystals [2].
+ They exhibit properties that vary dramatically from their bulk counterparts.
+ As a result, their characterization is of immense interest for researchers
+ in the fields of chemistry, physics, engineering, pharmacology and biology
+ [3].
+ Their construction involves isolating atomically thin layers of bulk material
+ and carefully stacking them together.
+ Their name is owed to the fact that the most prominent bonding force in
+ these structures is the van der Waals force between the planes of the crystals
+ [2].
+\begin_inset Newline newline
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\noindent
+Many of the most popular methods of building vdW heterostructures involve
+ a probabilistic process by which thousands of microscopic flakes of varying
+ sizes and shapes are deposited onto a microscope slide
 \begin_inset script superscript
 
 \begin_layout Plain Layout
@@ -175,12 +194,9 @@ Theory
 Visible light microscope images contain significant noise and color variation
  across flake surfaces.
  As a result, the use of classical computer vision algorithms often results
- in misidentification of noise and flake color variations as flake boundaries.
- (
-\series bold
-Insert example image
-\series default
-).
+ in misidentification of noise and flake color variations at flake boundaries.
+ Figure 1 shows an image with significant noise around the boundary of a
+ flake.
  In order to accurately apply classical edge detection algorithms, it is
  necessary to produce an image that has distinct edges along the boundaries
  of flakes, without having boundaries inside of a flake.
@@ -188,10 +204,26 @@ Insert example image
  to the HSV color space of an image.
  A BGMM-DP model is fit and used to distinguish flakes from background and
  different flake thicknesses from each other.
+\end_layout
+
+\begin_layout Standard
+\noindent
+\align center
+\begin_inset Graphics
+	filename fig_1.png
+
+\end_inset
+
+
 \begin_inset Newline newline
 \end_inset
 
 
+\series bold
+Figure 1:
+\series default
+ A flake (top left) and significant noise present in the background around
+ the flake.
 \end_layout
 
 \begin_layout Subsubsection*
@@ -556,6 +588,8 @@ Results and Analysis
 \end_layout
 
 \begin_layout Standard
+\noindent
+\align center
 Figure 
 \series bold
 N
@@ -565,7 +599,41 @@ N
  The variance of the pixel values both within the boundaries of flakes and
  in the background of the image can result in innacruate detection of edges
  during the Canny edge detection process.
- Figure 
+ 
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Graphics
+	filename fig_2_left.png
+	lyxscale 50
+	scale 50
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename fig_2_right.png
+	lyxscale 49
+	scale 49
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\series bold
+Figure 2:
+\series default
+ A noisy image (left) and the same image after non-local 
+\end_layout
+
+\begin_layout Standard
+\noindent
+\align left
+Figure 
 \series bold
 N
 \series default
@@ -602,7 +670,51 @@ function applied to it.
 \series bold
 N
 \series default
- was constructed by drawing these vectors onto an otherwise unmodifie
+ was constructed by drawing these vectors onto an otherwise unmodified microscop
+e image.
+ Figure 
+\series bold
+N
+\series default
+ is a flake that has been extracted from this image, with a mask applied
+ to differentiate the background from the flake itself.
+ This, alongside the location of the flake on the slide, is the ultimate
+ result of the algorithm as a whole.
+ While this process is fairly accurate, its performance is less than ideal
+ under some circumstances.
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+Figure 
+\series bold
+N
+\series default
+ shows a microscope image (left) and the largest flake extracted from that
+ image (right).
+ The mask around this flake is imperfect and fails to occlude some of the
+ background of the slide.
+ This is due to a 
+\begin_inset Quotes eld
+\end_inset
+
+halo
+\begin_inset Quotes erd
+\end_inset
+
+ effect around the flake in the original image (left).
+ This causes the BGMM model to perform poorly when differentiating the flake
+ from the background in the region where the halo is present.
+ Problems of this nature can be mitigated by controlling the conditions
+ under which the images are taken.
+ In this particular case, reducing the exposure time of the camera or decreasing
+ the amount of light hitting the micropscope slide would have eliminated
+ the halo effect.
+ In general, the performance of the extraction algorithm is satisfactory
+ for images where the conditions are well controlled.
 \end_layout
 
 \begin_layout Section*
@@ -610,20 +722,15 @@ Discussion and Conclusion
 \end_layout
 
 \begin_layout Standard
-Discussion Discussion Discussion Discussion Discussion Discussion Discussion
- Discussion Discussion Discussion Discussion Discussion Discussion Discussion
- Discussion Discussion Discussion Discussion Discussion Discussion Discussion
- Discussion Discussion Discussion Discussion Discussion Discussion Discussion
- Discussion Discussion Discussion Discussion Discussion Discussion Discussion
- Discussion Discussion Discussion Discussion Discussion Discussion Discussion
- Discussion Discussion Discussion Discussion Discussion Discussion Discussion
- Discussion Discussion Discussion Discussion Discussion Discussion Discussion
- Discussion Discussion Discussion Discussion Discussion Discussion Discussion
- Discussion Discussion Discussion Discussion Discussion Discussion Discussion
- Discussion Discussion Discussion Discussion Discussion Discussion Discussion
- Discussion Discussion Discussion Discussion Discussion Discussion Discussion
- Discussion Discussion Discussion Discussion Discussion Discussion Discussion
- Discussion Discussion Discussion Discussion
+This work has produced a Python script that can be applied to a set of images
+ and will isolate the location and geometry of every TMD flake in that set
+ of images.
+ The performance of this algorithm is excellent in cases where the imaging
+ conditions (exposure time, lighting, etc.) are well controlled.
+ In poorly controlled cases, the performance of the algorithm is satisfactory.
+ What remains to be seen is how well a BGMM can classify the thickness of
+ flakes and how severely the performance of this classification is effected
+ by the lighting conditions.
 \end_layout
 
 \begin_layout Section*
@@ -632,6 +739,14 @@ References
 
 \begin_layout Standard
 [1] s41699-018-0084-0
+\begin_inset Newline newline
+\end_inset
+
+[2] s41467-018-03723-w
+\begin_inset Newline newline
+\end_inset
+
+[3] s41524-019-0262-4
 \end_layout
 
 \begin_layout Section*
