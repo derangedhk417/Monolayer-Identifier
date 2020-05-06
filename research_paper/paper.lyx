@@ -1,0 +1,691 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 2.5cm
+\topmargin 1.5cm
+\rightmargin 2.5cm
+\bottommargin 2.5cm
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Automated Identification of Crystalline n-Layer TMD Flakes in Microscope
+ Images for the Production of Van der Waals Heterostructures
+\end_layout
+
+\begin_layout Author
+Adam Robinson
+\end_layout
+
+\begin_layout Abstract
+\noindent
+The characterization and study of van der Waals heterostructures has been
+ of significant interest in recent years.
+ These structures exhibit novel and potentially useful properties that have
+ driven efforts to improve the speed and efficiency with which they are
+ constructed.
+ One of the most laborious steps in the process of their construction is
+ the identification of monolayers on a microscope slide.
+ These slides often contain on the order of 
+\begin_inset Formula $10^{3}$
+\end_inset
+
+ crystalline flakes, the majority of which are not monolayers.
+ Identification of these monolayers via an automated process, rather than
+ manual inspection by a researcher, promises to reduce the number of man
+ hours spent building them.
+ We present a means of automatically inspecting microscope images and differenti
+ating flakes from background images and noise.
+ This method produces a dataset that is well-suited to unsupervised machine
+ learning models that can be applied to classify these flakes by their thickness.
+\end_layout
+
+\begin_layout Section*
+Introduction
+\end_layout
+
+\begin_layout Standard
+sdfsdfds
+\end_layout
+
+\begin_layout Standard
+\noindent
+Many of the most popular methods of building van der Waals (vdW) heterostructure
+s involve a probabilistic process by which thousands of microscopic flakes
+ of varying sizes and shapes are deposited onto a microscope slide
+\begin_inset script superscript
+
+\begin_layout Plain Layout
+[1]
+\end_layout
+
+\end_inset
+
+.
+ In order to build a heterostructure with the desired properties, a slide
+ must be searched for crystals with a desired thickness, often a single
+ layer of atoms.
+ This search process can consume hours of a researchers time, because the
+ ratio of multilayer to monolayer flakes produced by most current exfoliation
+ processes is very high.
+ Here, we present a means of automating this process using an unsupervised
+ machine learning method and several common computer vision techniques.
+ This process is designed to be integrated into an automated microscopy
+ setup that images an entire microscope slide without human intervention.
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+This process is centered around differentiating crystal flakes from each
+ other and from the background of an image.
+ This is accomplished by using a Bayesian-Gaussian Mixture Model with a
+ Dirichlet prior (BGMM-DP).
+ This is an unsupervised machine learning algorithm that classifies members
+ of an n-dimensional dataset into discrete clusters.
+ Images are preprocessed using common computer vision techniques provided
+ by the OpenCV library.
+ A BGMM-DP model is fit to a subset of these images and is then used to
+ classify each pixel in the image based on parameters that are determined
+ during the fitting process.
+ This process produces an image in which flakes and background are differentiate
+d from each other.
+ This method significantly improves that accuracy with which the boundaries
+ of flakes can be determined.
+ Once this segmentation process has completed, more traditional computer
+ vision techniques are used to extract geometric properties from the differentia
+ted image.
+\end_layout
+
+\begin_layout Section*
+Theory
+\end_layout
+
+\begin_layout Standard
+Visible light microscope images contain significant noise and color variation
+ across flake surfaces.
+ As a result, the use of classical computer vision algorithms often results
+ in misidentification of noise and flake color variations as flake boundaries.
+ (
+\series bold
+Insert example image
+\series default
+).
+ In order to accurately apply classical edge detection algorithms, it is
+ necessary to produce an image that has distinct edges along the boundaries
+ of flakes, without having boundaries inside of a flake.
+ In the present work, this is accomplished by fitting a clustering algorithm
+ to the HSV color space of an image.
+ A BGMM-DP model is fit and used to distinguish flakes from background and
+ different flake thicknesses from each other.
+\begin_inset Newline newline
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+Mixture Models
+\end_layout
+
+\begin_layout Standard
+A mixture model is generally defined by a set of 
+\begin_inset Formula $K$
+\end_inset
+
+ components designed to represent the distribution of 
+\begin_inset Formula $N$
+\end_inset
+
+ observations.
+ Here, 
+\begin_inset Formula $N$
+\end_inset
+
+ is a finite number of observations in 
+\begin_inset Formula $M$
+\end_inset
+
+ dimensions, where 
+\begin_inset Formula $M$
+\end_inset
+
+ is also finite.
+ Each component 
+\begin_inset Formula $\left(K\right)$
+\end_inset
+
+ is a statistical distribution such as a Gaussian or Poisson distribution.
+ In addition to the parameters that define the distribution for each component,
+ each component is assigned a weight parameter, often denoted 
+\begin_inset Formula $\phi$
+\end_inset
+
+.
+ A mixture model is designed to assign each observation to one of the 
+\begin_inset Formula $K$
+\end_inset
+
+ components.
+ This is sometimes referred to as determining the class that each observation
+ is a member of.
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+A Bayesian Gaussian Mixture Model uses 
+\begin_inset Formula $K$
+\end_inset
+
+ Gaussian distributions as components, but draws the parameters (mean and
+ variance) for these distributions from another distribution.
+ This distribution is referred to as a prior.
+ In general, a Bayesian Gaussian Mixture model has one prior distribution
+ for each of the parameters that define each of the 
+\begin_inset Formula $K$
+\end_inset
+
+ components of the model.
+ These prior distributions may also be of different types.
+ For example, the weight parameters 
+\begin_inset Formula $\mathbf{\phi}$
+\end_inset
+
+, may be distributed according to Dirichlet distributions, while the means
+ 
+\begin_inset Formula $\mathbf{\mu}$
+\end_inset
+
+, may be distributed according to a Gaussian distribution.
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+Mixture models are considered unsupervised machine learning algorithms,
+ because they do not require any knowledge about the classification of the
+ observations they are built on.
+ One of the most common methods for fitting a mixture model is called likelihood
+ maximization.
+ The likelihood function of a mixture component is generally defined as,
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align}
+L\left(\Theta|\,\mathbf{X}\right) & =\prod_{i=1}^{N}p\left(x_{i}|\,\Theta\right)
+\end{align}
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+Here, 
+\begin_inset Formula $\Theta$
+\end_inset
+
+ is the set of parameters that define the component distribution, 
+\begin_inset Formula $p\left(x_{i}|\,\Theta\right)$
+\end_inset
+
+ is the probability of the observation 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+ and 
+\begin_inset Formula $L\left(\Theta|\,\mathbf{X}\right)$
+\end_inset
+
+ is the likelihood function.
+ The likelihood function is defined for each component of the mixture.
+ Algorithms designed to maximize the likelihood often work with the log
+ likelihood, 
+\begin_inset Formula $\log L\left(\Theta|\,\mathbf{X}\right)$
+\end_inset
+
+.
+ This is done because logarithms increase monotonically, but their derivatives
+ increase with proportion to the reciprocal of their argument.
+ This improves numerical accuracy by reducing the magnitude of values involved
+ in the maximization process.
+ The most common likelihood maximization algorithm is called the Expectation
+ Maximization algorithm.
+ This is designed to maximize the expectation value (mean) of the likelihood
+ functions for all components.
+ For Gaussian mixtures, this is often accomplished finding values of 
+\begin_inset Formula $\Theta$
+\end_inset
+
+, such that the gradient of the expectation with respect to 
+\begin_inset Formula $\Theta$
+\end_inset
+
+ is zero.
+\end_layout
+
+\begin_layout Section*
+Algorithm
+\end_layout
+
+\begin_layout Standard
+In the present work, a Bayesian Gaussian Mixture Model with a Dirichlet
+ Prior is used to differentiate crystal flakes from image background and
+ from each other.
+ The model is defined by 
+\begin_inset Formula $K$
+\end_inset
+
+ Gaussian distributions, each with a weight, denoted 
+\begin_inset Formula $\phi_{i}$
+\end_inset
+
+.
+ Each Gaussian component is defined by a covariance matrix, 
+\begin_inset Formula $\boldsymbol{\sigma}_{i}$
+\end_inset
+
+ and a mean vector, 
+\begin_inset Formula $\boldsymbol{\mu}_{i}$
+\end_inset
+
+.
+ As this is a Bayesian model, the parameters 
+\begin_inset Formula $\phi_{i},\,\boldsymbol{\sigma}_{i}$
+\end_inset
+
+ and 
+\begin_inset Formula $\boldsymbol{\mu}_{i}$
+\end_inset
+
+ do not hold definite values, but are distributed according to the following,
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align}
+\boldsymbol{\phi} & \sim\mathrm{Dir}\left(\boldsymbol{\alpha}\right)\\
+\boldsymbol{\sigma}_{i} & \sim W_{M}\left(\mathbf{V}_{i},\,n\right)\\
+\boldsymbol{\mu}_{i} & \sim\mathcal{N}\left(\tilde{\boldsymbol{\mu}}_{i},\,\tilde{\boldsymbol{\sigma}}_{i}^{2}\right)\\
+i & \in\left[1,\,K\right]
+\end{align}
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+Here, 
+\begin_inset Formula $A\sim B$
+\end_inset
+
+ indicates that the variable 
+\begin_inset Formula $A$
+\end_inset
+
+ is distributed according to 
+\begin_inset Formula $B$
+\end_inset
+
+.
+ 
+\begin_inset Formula $\mathrm{Dir}\left(\boldsymbol{\alpha}\right)$
+\end_inset
+
+ is the the Dirichlet distribution, 
+\begin_inset Formula $W_{M}\left(\mathbf{V}_{i},\,n\right)$
+\end_inset
+
+ is the Wishart distribution and 
+\begin_inset Formula $\mathcal{N}\left(\tilde{\boldsymbol{\mu}}_{i},\,\tilde{\boldsymbol{\sigma}}_{i}^{2}\right)$
+\end_inset
+
+ is the normal distribution.
+ 
+\begin_inset Formula $\boldsymbol{\alpha}$
+\end_inset
+
+ is a vector of positive real values, 
+\begin_inset Formula $\mathbf{V}_{i}$
+\end_inset
+
+ is an 
+\begin_inset Formula $M\times M$
+\end_inset
+
+ positive definite matrix (often referred to as a scale matrix), 
+\begin_inset Formula $n$
+\end_inset
+
+ is the number of degrees of freedom for the Wishart distribution (
+\begin_inset Formula $M$
+\end_inset
+
+ in the present work), 
+\begin_inset Formula $\tilde{\boldsymbol{\mu}}_{i}$
+\end_inset
+
+ is the mean vector for the normal distribution and 
+\begin_inset Formula $\tilde{\boldsymbol{\sigma}}_{i}^{2}$
+\end_inset
+
+ is a diagonal covariance matrix for the normal distribution.
+ The Wishart distribution is used, because it generates a positive definite
+ matrix, which is necessary to form a covariance matrix for a normal distributio
+n.
+ The mixture model is effectively defined by the hyper parameters 
+\begin_inset Formula $\boldsymbol{\alpha}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathbf{V}_{i}$
+\end_inset
+
+, 
+\begin_inset Formula $\tilde{\boldsymbol{\mu}}_{i}$
+\end_inset
+
+ and 
+\begin_inset Formula $\tilde{\boldsymbol{\sigma}}_{i}^{2}$
+\end_inset
+
+, because they control the distribution of the variables that are used to
+ calculate the likelihood function.
+ The model is fit using the Expectation Maximization algorithm, which attempts
+ to find
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align}
+\mathrm{argmax} & \;\mathrm{E}\left[\log L\left(\Theta|\,\mathbf{X}\right)\right]\\
+\Theta & =\left\{ \boldsymbol{\alpha},\,\mathbf{V},\,\tilde{\boldsymbol{\mu}},\,\tilde{\boldsymbol{\sigma}}\right\} 
+\end{align}
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+where 
+\begin_inset Formula $\Theta$
+\end_inset
+
+ collectively refers to the parameters that define the prior distributions
+ and 
+\begin_inset Formula $\mathrm{E}\left[\log L\left(\Theta|\,\mathbf{X}\right)\right]$
+\end_inset
+
+ refers to the expectation of the logarithm of the likelihood function over
+ the likelihood functions for all components.
+ The BGMM forms the most complicated part of the model, but several important
+ steps must be taken to process an image.
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+The goal of the image processing algorithm is to extract the location, orientati
+on, geometry and thickness of every flake of TMD in an image.
+ This is accomplished with a six step process.
+\end_layout
+
+\begin_layout Enumerate
+The image is denoised using the non-local means denoising alogorithm.
+\end_layout
+
+\begin_layout Enumerate
+The pixels in the image are classified by the BGMM, so that flakes of different
+ thicknesses will be differentiated from eachother and from the background.
+\end_layout
+
+\begin_layout Enumerate
+The Canny edge detection algorithm is used to construct an image with the
+ boundaries of crystal flakes highlighted.
+\end_layout
+
+\begin_layout Enumerate
+In order to further reduce errors due to noise, a dilation filter is applied
+ to the edge detected image.
+ (Demonstrate effects of non dilated image with a side by side image)
+\end_layout
+
+\begin_layout Enumerate
+A contour extraction algorithm provided by OpenCV is applied to convert
+ the edge detected image into a set of vectors.
+\end_layout
+
+\begin_layout Enumerate
+The pixels contained within each separate contour are converted into an
+ image.
+ Each resulting image contains the original pixels that comprise the flake
+ contained within the corresponding contour.
+\end_layout
+
+\begin_layout Standard
+This process produces a set of images, each of which contains a single TMD
+ flake and a pixel mask that can be used to differentiate the background
+ of the image from the flake.
+ From here, a BGMM model can be used to classify the flake by thickness.
+ In cases where a flake has regions with different numbers of layers, it
+ is possible to classify parts of the flake by their difference.
+\end_layout
+
+\begin_layout Section*
+Results and Analysis
+\end_layout
+
+\begin_layout Standard
+Figure 
+\series bold
+N
+\series default
+ shows a microscope image that has been denoised using a non-local means
+ denoising algorithm (right) and the original image (left).
+ The variance of the pixel values both within the boundaries of flakes and
+ in the background of the image can result in innacruate detection of edges
+ during the Canny edge detection process.
+ Figure 
+\series bold
+N
+\series default
+ is an image that has been segmented using a BGMM.
+ The (COLOR) region denotes the background of the image, while the (COLOR)
+ and (COLOR) regions denote flakes of different thicknesses.
+ It is important to note that at this stage in the process, the only purpose
+ of the BGMM is to differentiate crystals from the background.
+ Classification is performed using another BGMM after the differentiation
+ process is completed.
+ Figure 
+\series bold
+N
+\series default
+ is the image from Figure 
+\series bold
+N-1
+\series default
+ after is has had the Canny edge detection algorithm applied to it.
+ This image does not contain actual geometric data.
+ It has simply highlighted regions that correspond to edges in yellow.
+ Figure 
+\series bold
+N
+\series default
+ is the previous image with the OpenCV 
+\shape italic
+findContours 
+\shape default
+function applied to it.
+ At this stage in the process, the algorithm has extracted a set of vectors
+ that define a closed contour for each flake.
+ The image in Figure 
+\series bold
+N
+\series default
+ was constructed by drawing these vectors onto an otherwise unmodified microscop
+e image.
+ Figure 
+\series bold
+N
+\series default
+ is a flake that has been extracted from this image, with a mask applied
+ to differentiate the background from the flake itself.
+ This, alongside the location of the flake on the slide, is the ultimate
+ result of the algorithm as a whole.
+ While this process is fairly accurate, its performance is less than ideal
+ under some circumstances.
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+Figure 
+\series bold
+N
+\series default
+ shows a microscope image (left) and the largest flake extracted from that
+ image (right).
+ The mask around this flake is imperfect and fails to occlude some of the
+ background of the slide.
+ This is due to a 
+\begin_inset Quotes eld
+\end_inset
+
+halo
+\begin_inset Quotes erd
+\end_inset
+
+ effect around the flake in the original image (left).
+ This causes the BGMM model to perform poorly when differentiating the flake
+ from the background in the region where the halo is present.
+ Problems of this nature can be mitigated by controlling the conditions
+ under which the images are taken.
+ In this particular case, reducing the exposure time of the camera or decreasing
+ the amount of light hitting the micropscope slide would have eliminated
+ the halo effect.
+ In general, the performance of the extraction algorithm is satisfactory
+ for images where the conditions are well controlled.
+\end_layout
+
+\begin_layout Section*
+Discussion and Conclusion
+\end_layout
+
+\begin_layout Standard
+This work has produced a Python script that can be applied to a set of images
+ and will isolate the location and geometry of every TMD flake in that set
+ of images.
+ The performance of this algorithm is excellent in cases where the imaging
+ conditions (exposure time, lighting, etc.) are well controlled.
+ In poorly controlled cases, the performance of the algorithm is satisfactory.
+ What remains to be seen is how well a BGMM can classify the thickness of
+ flakes and how severely the performance of this classification is effected
+ by the lighting conditions.
+\end_layout
+
+\begin_layout Section*
+References
+\end_layout
+
+\begin_layout Standard
+[1] s41699-018-0084-0
+\end_layout
+
+\begin_layout Section*
+TODO
+\end_layout
+
+\begin_layout Enumerate
+Implement k-means clustering as an option.
+ This may be more performant than BGMM
+\end_layout
+
+\end_body
+\end_document
